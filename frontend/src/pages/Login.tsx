@@ -62,7 +62,7 @@ const Login = () => {
     try {
       // In a real app, you'd verify user credentials here
       // For this demo, we'll just send the OTP
-      const response = await fetch("/api/send-otp", {
+      const response = await fetch("https://emailotp-phi.vercel.app/api/send-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

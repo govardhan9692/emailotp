@@ -69,7 +69,7 @@ const VerifyOTP = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/verify-otp", {
+      const response = await fetch("https://emailotp-phi.vercel.app/api/verify-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -114,7 +114,7 @@ const VerifyOTP = () => {
     setCountdown(600); // Reset countdown to 10 minutes
     
     try {
-      const response = await fetch("/api/send-otp", {
+      const response = await fetch("https://emailotp-phi.vercel.app/api/send-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
