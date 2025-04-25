@@ -269,3 +269,6 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Add this export for Vercel serverless functions
+export default app;
