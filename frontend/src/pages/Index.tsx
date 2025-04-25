@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Mail, Send } from "lucide-react";
+import React from "react";
 
 const Index = () => {
   const { toast } = useToast();
