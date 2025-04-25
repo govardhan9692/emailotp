@@ -1,29 +1,21 @@
-import { useTheme } from "next-themes"
-import { Toaster as Sonner, toast } from "sonner"
+import * as React from "react";
+import { Toaster as SonnerToaster } from "sonner";
 
-type ToasterProps = React.ComponentProps<typeof Sonner>
-
-const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
-
+// Re-export with proper types
+const Toaster = ({ ...props }: React.ComponentProps<typeof SonnerToaster>) => {
   return (
-    <Sonner
-      theme={theme as ToasterProps["theme"]}
+    <SonnerToaster
       className="toaster group"
       toastOptions={{
         classNames: {
-          toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
+          toast: "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground",
           description: "group-[.toast]:text-muted-foreground",
-          actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
       }}
       {...props}
     />
-  )
-}
+  );
+};
 
-export { Toaster, toast }
+// Export both Toaster and named as Sonner to support both import styles
+export { Toaster, Toaster as Sonner };

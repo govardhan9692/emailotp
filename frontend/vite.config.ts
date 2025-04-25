@@ -9,9 +9,9 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     proxy: {
-      // forward API calls to backend
+      // Forward API calls to backend
       '/send-email': 'http://localhost:5000',
-      '/api':        'http://localhost:5000/api'
+      '/api': 'http://localhost:5000'
     }
   },
   plugins: [
@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(__dirname, "src"),
     },
   },
 }));

@@ -4,9 +4,24 @@ import bodyParser from 'body-parser';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import path from 'path';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 // Load environment variables from parent directory's .env file
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBppBoZ8nmNQSRGXbfq6ed0kvCKP-tej6Q",
+  authDomain: "lastmovements-6b3d1.firebaseapp.com",
+  projectId: "lastmovements-6b3d1",
+  storageBucket: "lastmovements-6b3d1.firebasestorage.app",
+  messagingSenderId: "1048340978110",
+  appId: "1:1048340978110:web:ce159540e7eb27293c41ef",
+  measurementId: "G-LW7VFWXC6H"
+};
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,6 +36,154 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
+  }
+});
+
+// Generate a random 6-digit OTP
+function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Send OTP endpoint
+app.post('/api/send-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email is required' 
+      });
+    }
+
+    // Generate OTP
+    const otp = generateOTP();
+    const expiryTime = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+    
+    // Store OTP in Firebase
+    await setDoc(doc(db, 'otps', email), {
+      otp,
+      expires: expiryTime,
+      createdAt: serverTimestamp(),
+      used: false
+    });
+    
+    console.log(`Generated OTP for ${email}: ${otp} (stored in Firebase)`);
+    
+    // Send OTP via email
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const info = await transporter.sendMail({
+      from: `"Auth Service" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Your Verification Code",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+          <h2 style="color: #6366f1; text-align: center;">Email Verification</h2>
+          <p>Your verification code is:</p>
+          <div style="margin: 20px 0; padding: 15px; background-color: #f3f4f6; border-radius: 5px; text-align: center;">
+            <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px;">${otp}</span>
+          </div>
+          <p>This code will expire in 10 minutes.</p>
+          <p>If you didn't request this code, please ignore this email.</p>
+        </div>
+      `,
+      text: `Your verification code is: ${otp}. This code will expire in 10 minutes.`
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'OTP sent successfully',
+      email 
+    });
+  } catch (error: any) {
+    console.error('Error sending OTP:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to send OTP',
+      error: error.message
+    });
+  }
+});
+
+// Verify OTP endpoint
+app.post('/api/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    
+    if (!email || !otp) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email and OTP are required' 
+      });
+    }
+    
+    // Retrieve OTP from Firebase
+    const otpDoc = await getDoc(doc(db, 'otps', email));
+    
+    if (!otpDoc.exists()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No OTP was generated for this email' 
+      });
+    }
+    
+    const otpData = otpDoc.data();
+    
+    // Check if OTP is already used
+    if (otpData.used) {
+      return res.status(400).json({
+        success: false,
+        message: 'This OTP has already been used'
+      });
+    }
+    
+    // Check if OTP is expired
+    if (Date.now() > otpData.expires) {
+      // Mark as expired in Firebase
+      await updateDoc(doc(db, 'otps', email), {
+        used: true,
+        invalidReason: 'expired'
+      });
+      
+      return res.status(400).json({ 
+        success: false, 
+        message: 'OTP has expired' 
+      });
+    }
+    
+    // Verify OTP
+    if (otpData.otp !== otp) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid OTP' 
+      });
+    }
+    
+    // Mark OTP as used in Firebase (nullify it for security)
+    await updateDoc(doc(db, 'otps', email), {
+      used: true,
+      usedAt: serverTimestamp(),
+      otp: null // Nullify the OTP for security
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'OTP verified successfully' 
+    });
+  } catch (error: any) {
+    console.error('Error verifying OTP:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify OTP',
+      error: error.message
+    });
   }
 });
 
