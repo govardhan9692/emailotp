@@ -1,16 +1,26 @@
 {
-    "version": 2,
-    "builds": [
-     {
-      "src": "server.js",
-      "use": "@vercel/node",
-      "config": { "includeFiles": ["dist/**"] }
-     }
-    ],
-    "routes": [
-     {
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "server.ts"
+    },
+    {
+      "src": "/send-email",
+      "dest": "server.ts"
+    },
+    {
       "src": "/(.*)",
-      "dest": "server.js"
-     }
-    ]
-   }
+      "dest": "server.ts"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}

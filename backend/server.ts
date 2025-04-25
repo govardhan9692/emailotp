@@ -260,15 +260,44 @@ app.post('/send-email', async (req, res) => {
   }
 });
 
-// Fix the catch-all handler - remove the condition that blocks the /send-email path
-// since we already have a specific handler for that route
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Endpoint not found' });
+// Add a health check route at the root path
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok',
+    message: 'API is running',
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Add an explicit handler for API endpoints
+app.get('/api', (req, res) => {
+  res.status(200).json({ 
+    message: 'Email-Scribe API',
+    version: '1.0.0',
+    endpoints: [
+      '/api/send-otp',
+      '/api/verify-otp',
+      '/api/send',
+      '/send-email'
+    ]
+  });
 });
+
+// Move the catch-all handler to the end of all routes
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    success: false, 
+    message: 'Endpoint not found',
+    path: req.originalUrl
+  });
+});
+
+// Keep the server listening only in development, not needed for Vercel
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
 // Add this export for Vercel serverless functions
 export default app;
